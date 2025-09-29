@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Base de Datos - Inicio</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:0; background:#f5f9ff; }
+    header { background:#043366; color:white; text-align:center; padding:1rem; }
+    .container { max-width:1200px; margin:auto; padding:20px; }
+    table { width:100%; border-collapse:collapse; margin-top:1rem; }
+    th, td { padding:12px; border:1px solid #ddd; text-align:center; }
+    th { background:#043366; color:white; }
+    tr:nth-child(even) { background:#e9f0fa; }
+    img { max-width:300px; width:100%; border-radius:10px; }
+    a { color:#043366; font-weight:bold; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    @media(max-width:768px){
+      table,thead,tbody,th,td,tr{display:block;}
+      tr{margin-bottom:1rem; border:1px solid #ccc; padding:10px; background:white;}
+      td{border:none; display:flex; justify-content:space-between; text-align:left;}
+      th{display:none;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Base de Datos</h1>
+    <p>Visualización general</p>
+  </header>
+
+  <div class="container">
+    <h2>Listado Completo</h2>
+    <table id="data-table">
+      <thead><tr id="table-head"></tr></thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
+
+    async function loadCSV(){
+      const res = await fetch(csvUrl);
+      const data = await res.text();
+      const rows = data.split("\n").map(r=>r.split(","));
+
+      const tableHead=document.getElementById("table-head");
+      const tableBody=document.getElementById("table-body");
+
+      // Encabezados
+      rows[0].forEach(h=>{
+        const th=document.createElement("th");
+        th.textContent=h;
+        tableHead.appendChild(th);
+      });
+
+      // Filas
+      rows.slice(1).forEach(row=>{
+        const tr=document.createElement("tr");
+        row.forEach((cell,i)=>{
+          const td=document.createElement("td");
+          // Si es la columna "N°", hacemos un link a su página
+          if(rows[0][i].trim()==="N°"){
+            const a=document.createElement("a");
+            a.href=`${cell.trim()}.html`;
+            a.textContent=cell;
+            td.appendChild(a);
+          } else if(cell.match(/\.(jpg|jpeg|png|gif|webp)$/i)){
+            const img=document.createElement("img");
+            img.src=cell.trim();
+            td.appendChild(img);
+          } else {
+            td.textContent=cell;
+          }
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      });
+    }
+
+    loadCSV();
+  </script>
+</body>
+</html>
