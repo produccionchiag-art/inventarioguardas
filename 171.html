@@ -5,26 +5,82 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Inventario de Guardas</title>
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:20px;background:#f4f6fa;color:#333}
-    header{ text-align:center;background:#043366;color:#fff;padding:20px;border-radius:10px}
-    header h1{margin:0;font-size:28px}
-    header h2{margin:10px 0 0 0;font-size:20px;font-weight:normal;color:#cdd9f0}
-    header p{font-size:14px;margin:5px 0 0 0;color:#cdd9f0}
-    .container{display:flex;flex-wrap:wrap;margin-top:30px;gap:20px;align-items:flex-start;justify-content:center}
-    .image{flex:1;min-width:300px;text-align:center}
-    .image img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.2)}
-    .info{flex:1;min-width:300px;background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}
-    .info h3{margin-top:0;color:#043366}
-    .info p{margin:10px 0;font-size:16px}
-    .error{color:#8b0000;font-weight:bold}
-    @media(max-width:768px){ .container{flex-direction:column} .image, .info{min-width:100%} }
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      margin:0;
+      padding:20px;
+      background:#f4f6fa;
+      color:#333;
+    }
+    header{
+      text-align:center;
+      background:#043366;
+      color:#fff;
+      padding:25px;
+      border-radius:10px;
+    }
+    header h1{
+      margin:0;
+      font-size:36px;
+    }
+    header h2{
+      margin:15px 0 0 0;
+      font-size:28px;
+      font-weight:bold;
+      color:#ffeb3b;
+    }
+    .container{
+      display:flex;
+      flex-wrap:wrap;
+      margin-top:40px;
+      gap:30px;
+      align-items:flex-start;
+      justify-content:center;
+    }
+    .image{
+      flex:1;
+      min-width:350px;
+      text-align:center;
+    }
+    .image img{
+      max-width:100%;
+      height:auto;
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(0,0,0,0.25);
+    }
+    .info{
+      flex:1;
+      min-width:350px;
+      background:#fff;
+      padding:30px;
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(0,0,0,0.15);
+      font-size:20px;
+    }
+    .info h3{
+      margin-top:0;
+      color:#043366;
+      font-size:26px;
+    }
+    .info p{
+      margin:15px 0;
+      font-size:20px;
+    }
+    .error{
+      color:#8b0000;
+      font-weight:bold;
+      font-size:20px;
+    }
+    @media(max-width:768px){
+      .container{flex-direction:column}
+      .image, .info{min-width:100%}
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>Inventario de Guardas</h1>
     <h2 id="codigo">Cargando...</h2>
-    <p id="fila"></p>
   </header>
 
   <div class="container">
@@ -39,243 +95,94 @@
   </div>
 
   <script>
-  // URL CSV (tu hoja publicada en CSV)
   const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
-
-  // Código a filtrar: se obtiene del nombre de archivo (ej: "3.html" -> "3")
   const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
 
-  // Normalizar encabezados (quita tildes, símbolos y espacios)
   function normalize(text){
-    if(text === undefined || text === null) return "";
-    return String(text)
-      .toLowerCase()
+    return String(text||"").toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
       .replace(/[^a-z0-9]/g,"");
   }
-
-  // Limpia valores esperados como número. "01", "1.0", " 1 ", "1,0" => 1
   function cleanNumber(val){
-    if(val === undefined || val === null) return NaN;
-    const s = String(val).trim();
-    if(s === "") return NaN;
-    // quitar comas miles y normalizar coma decimal
-    const only = s.replace(/\s+/g,"").replace(/,/g,".");
-    const n = Number(only);
-    return isNaN(n) ? NaN : n;
+    if(val==null) return NaN;
+    return Number(String(val).trim().replace(",","."));
   }
-
-  // Detección de delimitador probando la primera línea
   function detectDelimiter(text){
-    const firstLine = text.split(/\r\n|\n/)[0] || "";
-    const countComma = (firstLine.match(/,/g)||[]).length;
-    const countSemi = (firstLine.match(/;/g)||[]).length;
-    if(countSemi > countComma) return ";";
-    return ",";
+    const firstLine = text.split(/\r\n|\n/)[0]||"";
+    return (firstLine.split(";").length > firstLine.split(",").length) ? ";" : ",";
   }
-
-  // Parse CSV respetando comillas (no dependemos de split(","))
-  function parseCSV(text, delimiter=','){
-    // eliminar BOM si existe
-    text = text.replace(/^\uFEFF/,"");
-    const rows = [];
-    const lines = text.split(/\r\n|\n/);
+  function parseCSV(text, delimiter=","){
+    text=text.replace(/^\uFEFF/,"");
+    const rows=[], lines=text.split(/\r\n|\n/);
     for(let line of lines){
-      let row = [];
-      let cur = "";
-      let inQuotes = false;
+      let row=[], cur="", inQuotes=false;
       for(let i=0;i<line.length;i++){
-        const ch = line[i];
-        if(ch === '"'){
-          // doble comilla dentro de campo: ""
-          if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
-          else { inQuotes = !inQuotes; }
-        } else if(ch === delimiter && !inQuotes){
-          row.push(cur);
-          cur = "";
-        } else {
-          cur += ch;
-        }
+        const ch=line[i];
+        if(ch==='"'){
+          if(inQuotes && line[i+1]==='"'){cur+='"';i++;}
+          else inQuotes=!inQuotes;
+        } else if(ch===delimiter && !inQuotes){
+          row.push(cur); cur="";
+        } else cur+=ch;
       }
-      // push final
       row.push(cur);
-      // si la fila está vacía (por líneas finales) la ignoramos
-      // también limpiamos espacios finales en celdas
-      if(!(row.length === 1 && row[0].trim() === "")){
-        rows.push(row.map(c => c === undefined ? "" : c.trim()));
-      }
+      if(!(row.length===1 && row[0].trim()===""))
+        rows.push(row.map(c=>c.trim()));
     }
     return rows;
   }
-
-  // Convierte link de Drive a enlace de vista directa si es necesario
   function driveToView(url){
-    if(!url) return url;
-    try{
-      const u = url.trim();
-      // si ya es uc?export=view o data:image o comienza con http => dejar
-      if(u.includes("uc?export=view") || u.startsWith("data:") || /^https?:\/\//i.test(u) && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(u)) return u;
-      // /file/d/ID/
-      const m1 = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if(m1 && m1[1]) return "https://drive.google.com/uc?export=view&id=" + m1[1];
-      // open?id=ID
-      const m2 = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if(m2 && m2[1]) return "https://drive.google.com/uc?export=view&id=" + m2[1];
-    }catch(e){}
+    if(!url) return "";
+    url=url.trim();
+    const m1=url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if(m1) return "https://drive.google.com/uc?export=view&id="+m1[1];
+    const m2=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if(m2) return "https://drive.google.com/uc?export=view&id="+m2[1];
     return url;
   }
 
-  async function loadCSVandRender(){
-    try{
-      const res = await fetch(csvUrl);
-      if(!res.ok) throw new Error("Error fetch CSV: " + res.status + " " + res.statusText);
-      let text = await res.text();
-      if(!text || text.trim() === "") throw new Error("CSV vacío o no accesible (revisa que esté publicado).");
+  async function loadCSV(){
+    const res=await fetch(csvUrl);
+    const text=await res.text();
+    const rows=parseCSV(text, detectDelimiter(text));
+    const headers=rows[0].map(h=>normalize(h));
+    const headerMap={};
+    headers.forEach((h,i)=>headerMap[h]=i);
 
-      // detectar delimitador y parsear
-      const delimiter = detectDelimiter(text);
-      console.log("Delimitador detectado:", JSON.stringify(delimiter));
-      const rows = parseCSV(text, delimiter);
-      console.log("Primeras filas (hasta 8):", rows.slice(0,8));
+    const idxNum = headerMap["n"] ?? headerMap["numero"];
+    const idxCodigo = headerMap["codigo"];
+    const idxZona = headerMap["zona"];
+    const idxEquipo = headerMap["equipo"];
+    const idxObs = headerMap["observaciones"] ?? headerMap["observacion"];
+    const idxImg = headerMap["imagen"] ?? headerMap["foto"] ?? headerMap["link"];
 
-      // normalizar encabezados y crear mapa
-      const rawHeaders = rows[0] || [];
-      const headersNorm = rawHeaders.map(h => normalize(h));
-      console.log("Encabezados originales:", rawHeaders);
-      console.log("Encabezados normalizados:", headersNorm);
+    const target=cleanNumber(pageNumber);
+    const matchIndex = rows.findIndex((r,i)=>i>0 && cleanNumber(r[idxNum])===target);
 
-      // Mapa de encabezados normalizados a índice
-      const headerMap = {};
-      headersNorm.forEach((h,i) => { if(h) headerMap[h] = i; });
+    if(matchIndex!==-1){
+      const match=rows[matchIndex];
+      document.getElementById("codigo").textContent="Código: "+(match[idxCodigo]||"-");
+      document.getElementById("zona").textContent=match[idxZona]||"-";
+      document.getElementById("equipo").textContent=match[idxEquipo]||"-";
+      document.getElementById("obs").textContent=match[idxObs]||"-";
 
-      // intentar localizar columna N° con varias heurísticas
-      let idxNum = headerMap["n"] ?? headerMap["numero"] ?? headerMap["nro"] ?? headerMap["no"] ?? headerMap["numeroorden"];
-      if(idxNum === undefined){
-        // buscar primer encabezado que contenga 'n' solo o 'numero' o 'nro'
-        idxNum = headersNorm.findIndex(h => /^(n|num|numero|nro|no)$/.test(h) || h.includes("n"));
-        if(idxNum === -1) idxNum = undefined;
-      }
-      console.log("Índice candidato columna N°:", idxNum);
-
-      // localizar otros campos
-      const idxCodigo = headerMap["codigo"];
-      const idxZona = headerMap["zona"];
-      const idxEquipo = headerMap["equipo"];
-      const idxObs = headerMap["observaciones"] ?? headerMap["observacion"];
-      // buscar índice de imagen por heurística (imagen, foto, urlimagen, enlace)
-      const possibleImgKeys = ["imagen","foto","foto_url","urlimagen","imagenurl","url_foto","link","imagenlink"];
-      let idxImg;
-      for(const k of possibleImgKeys){
-        if(headerMap[k] !== undefined){ idxImg = headerMap[k]; break; }
-      }
-      // si no se encontró, intentar buscar columna que incluya 'img' o 'foto' en el nombre
-      if(idxImg === undefined){
-        idxImg = headersNorm.findIndex(h => h.includes("imagen") || h.includes("foto") || h.includes("img") || h.includes("link"));
-        if(idxImg === -1) idxImg = undefined;
-      }
-
-      console.log("Indices calculados:", { idxNum, idxCodigo, idxZona, idxEquipo, idxObs, idxImg });
-
-      // debug: listar los primeros valores de la columna N° para inspección
-      if(idxNum !== undefined){
-        const sample = rows.slice(1, 30).map((r,i) => ({row:i+2, raw: r[idxNum]}));
-        console.log("Valores (muestra) en columna N°:", sample);
+      const imgDiv=document.getElementById("imagen");
+      imgDiv.innerHTML="";
+      if(idxImg!==undefined && match[idxImg]){
+        const img=document.createElement("img");
+        img.src=driveToView(match[idxImg]);
+        img.onerror=()=>{imgDiv.textContent="Imagen no disponible";};
+        imgDiv.appendChild(img);
       } else {
-        console.warn("No se encontró una columna parecida a 'N°' en los encabezados. Revisa el nombre de la columna en tu hoja.");
-        document.getElementById("msg").style.display = "block";
-        document.getElementById("msg").textContent = "No se identificó la columna N° en tu hoja. Revisa el nombre del encabezado.";
+        imgDiv.textContent="Sin imagen disponible";
       }
-
-      // preparar target limpio
-      const targetNum = cleanNumber(pageNumber);
-      const targetStr = String(pageNumber).trim();
-
-      // función que compara una celda con target con varias estrategias
-      function matchesCell(cell){
-        if(cell === undefined || cell === null) return false;
-        const raw = String(cell).trim();
-        // 1) comparación numérica (si ambos son números)
-        const cellNum = cleanNumber(raw);
-        if(!isNaN(targetNum) && !isNaN(cellNum) && Number(cellNum) === Number(targetNum)) return true;
-        // 2) quitar ceros a la izquierda y punto decimal
-        const normCell = raw.replace(/^0+/, "").replace(/\.0+$/,"").replace(/[,\.]0+$/,"").trim();
-        const normTarget = String(targetStr).replace(/^0+/, "").replace(/\.0+$/,"").replace(/[,\.]0+$/,"").trim();
-        if(normCell === normTarget) return true;
-        // 3) comparación por que contenga (por si hay prefijo "N° 3" o "No.3")
-        if(raw.replace(/\s+/g,"").includes(targetStr.replace(/\s+/g,""))) return true;
-        // 4) comparación texto normalizado (quita símbolos)
-        if(normalize(raw) === normalize(targetStr)) return true;
-        return false;
-      }
-
-      // buscar primera fila que cumpla
-      let matchIndex = -1;
-      if(idxNum !== undefined){
-        for(let i = 1; i < rows.length; i++){
-          const row = rows[i];
-          // proteger acceso si fila corta
-          const cell = (row[idxNum] !== undefined) ? row[idxNum] : "";
-          const ok = matchesCell(cell);
-          console.log(`Fila ${i+1}: N° raw="${cell}" -> matches? ${ok}`);
-          if(ok){ matchIndex = i; break; }
-        }
-      }
-
-      if(matchIndex === -1){
-        // no encontró; informar en página y consola
-        console.warn("No se encontró ninguna fila que coincida con el N° buscado:", pageNumber);
-        document.getElementById("codigo").textContent = "⚠ No se encontró registro con N° " + pageNumber;
-        document.getElementById("fila").textContent = "";
-        document.getElementById("imagen").textContent = "Sin imagen disponible";
-        document.getElementById("msg").style.display = "block";
-        document.getElementById("msg").textContent = "No se encontró ninguna fila coincidente. Revisa la consola (F12) para ver los valores de la columna N° y los encabezados detectados.";
-        return;
-      }
-
-      // tenemos fila
-      const match = rows[matchIndex];
-      console.log("Fila encontrada (index):", matchIndex+1, match);
-
-      // Mostrar código (columna CÓDIGO) si existe
-      const codigoVal = (idxCodigo !== undefined) ? (match[idxCodigo] || "") : "";
-      document.getElementById("codigo").textContent = "Código: " + (codigoVal || "-");
-
-      // mostrar fila real en hoja
-      document.getElementById("fila").textContent = "Fila en hoja: " + (matchIndex + 1);
-
-      // info zona, equipo, obs
-      document.getElementById("zona").textContent = (idxZona !== undefined ? (match[idxZona] || "-") : "-");
-      document.getElementById("equipo").textContent = (idxEquipo !== undefined ? (match[idxEquipo] || "-") : "-");
-      document.getElementById("obs").textContent = (idxObs !== undefined ? (match[idxObs] || "-") : "-");
-
-      // imagen: si existe columna detectada, convertir drive links y mostrar
-      const imgDiv = document.getElementById("imagen");
-      imgDiv.innerHTML = "";
-      const rawImg = (idxImg !== undefined) ? (match[idxImg] || "") : "";
-      if(rawImg && rawImg.trim() !== ""){
-        const candidate = driveToView(rawImg.trim());
-        const imgEl = document.createElement("img");
-        imgEl.src = candidate;
-        imgEl.alt = "Imagen";
-        // si la imagen falla, mostrar mensaje alternativo
-        imgEl.onerror = function(){ 
-          imgDiv.textContent = "Imagen no disponible o URL inválida.";
-          console.error("Error cargando imagen:", candidate);
-        };
-        imgDiv.appendChild(imgEl);
-      } else {
-        imgDiv.textContent = "Sin imagen disponible";
-      }
-
-    }catch(err){
-      console.error("Error al cargar/parsear CSV:", err);
-      document.getElementById("codigo").textContent = "Error al cargar datos";
-      document.getElementById("msg").style.display = "block";
-      document.getElementById("msg").textContent = err.message || String(err);
+    } else {
+      document.getElementById("codigo").textContent="⚠ No se encontró registro con N° "+pageNumber;
+      document.getElementById("msg").style.display="block";
+      document.getElementById("msg").textContent="Revisa si existe ese número en tu hoja.";
     }
   }
-
-  loadCSVandRender();
+  loadCSV();
   </script>
 </body>
 </html>
