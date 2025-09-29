@@ -29,6 +29,11 @@
       font-weight: normal;
       color: #cdd9f0;
     }
+    header p {
+      font-size: 14px;
+      margin: 5px 0 0 0;
+      color: #cdd9f0;
+    }
     .container {
       display: flex;
       flex-wrap: wrap;
@@ -70,6 +75,7 @@
   <header>
     <h1>Inventario de Guardas</h1>
     <h2 id="codigo">Cargando...</h2>
+    <p id="fila"></p>
   </header>
 
   <div class="container">
@@ -86,12 +92,18 @@
     const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
     const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
 
-    // Normaliza encabezados (quita tildes, espacios y símbolos)
+    // Normalizar encabezados
     function normalize(text) {
       return text
         .toLowerCase()
         .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
         .replace(/[^a-z0-9]/g,"");
+    }
+
+    // Limpiar número (ej: "01", "1.0", " 1 " → 1)
+    function cleanNumber(val){
+      if(!val) return null;
+      return Number(String(val).trim().replace(",","."));
     }
 
     async function loadCSV(){
@@ -103,7 +115,7 @@
       const headerMap = {};
       headers.forEach((h,i) => headerMap[h] = i);
 
-      // Índices de columnas importantes
+      // Índices de columnas
       const idxNum = headerMap["n"] || headerMap["numero"];
       const idxCodigo = headerMap["codigo"];
       const idxZona = headerMap["zona"];
@@ -111,14 +123,18 @@
       const idxObs = headerMap["observaciones"] || headerMap["observacion"];
       const idxImg = headerMap["imagen"];
 
-      // Buscar fila por N°
-      const match = rows.find((r, i) => i > 0 && r[idxNum] === pageNumber);
+      const target = cleanNumber(pageNumber);
 
-      if(match){
-        // Mostrar CÓDIGO debajo del título
+      // Buscar fila
+      const matchIndex = rows.findIndex((r,i) => i > 0 && cleanNumber(r[idxNum]) === target);
+
+      if(matchIndex !== -1){
+        const match = rows[matchIndex];
+
+        // Mostrar datos
         document.getElementById("codigo").textContent = "Código: " + (match[idxCodigo] || "-");
+        document.getElementById("fila").textContent = "Fila en hoja: " + (matchIndex + 1);
 
-        // Mostrar info
         document.getElementById("zona").textContent = match[idxZona] || "-";
         document.getElementById("equipo").textContent = match[idxEquipo] || "-";
         document.getElementById("obs").textContent = match[idxObs] || "-";
@@ -134,7 +150,8 @@
           imgDiv.textContent = "Sin imagen disponible";
         }
       } else {
-        document.getElementById("codigo").textContent = "No se encontró el registro con N° " + pageNumber;
+        document.getElementById("codigo").textContent = "⚠ No se encontró registro con N° " + pageNumber;
+        document.getElementById("fila").textContent = "";
       }
     }
 
