@@ -1,188 +1,128 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inventario de Guardas</title>
   <style>
-    body{
-      font-family: Arial, Helvetica, sans-serif;
-      margin:0;
-      padding:20px;
-      background:#f4f6fa;
-      color:#333;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 0;
     }
-    header{
-      text-align:center;
-      background:#043366;
-      color:#fff;
-      padding:25px;
-      border-radius:10px;
+    header {
+      background-color: #043366;
+      color: white;
+      text-align: center;
+      padding: 20px;
     }
-    header h1{
-      margin:0;
-      font-size:36px;
+    h1 {
+      margin: 0;
+      font-size: 1.8em;
     }
-    header h2{
-      margin:15px 0 0 0;
-      font-size:28px;
-      font-weight:bold;
-      color:#ffeb3b;
+    h2 {
+      margin: 10px 0 0;
+      font-size: 1.4em;
+      color: #043366;
+      text-align: center;
     }
-    .container{
-      display:flex;
-      flex-wrap:wrap;
-      margin-top:40px;
-      gap:30px;
-      align-items:flex-start;
-      justify-content:center;
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      gap: 20px;
+      flex-wrap: wrap; /* 🔑 hace que en pantallas pequeñas se acomode */
     }
-    .image{
-      flex:1;
-      min-width:350px;
-      text-align:center;
+    .image-box {
+      flex: 1 1 300px;
+      text-align: center;
     }
-    .image img{
-      max-width:100%;
-      height:auto;
-      border-radius:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,0.25);
+    .image-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
-    .info{
-      flex:1;
-      min-width:350px;
-      background:#fff;
-      padding:30px;
-      border-radius:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,0.15);
-      font-size:20px;
+    .info-box {
+      flex: 1 1 300px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .info h3{
-      margin-top:0;
-      color:#043366;
-      font-size:26px;
+    .info-box p {
+      font-size: 1.2em;
+      margin: 10px 0;
     }
-    .info p{
-      margin:15px 0;
-      font-size:20px;
-    }
-    .error{
-      color:#8b0000;
-      font-weight:bold;
-      font-size:20px;
-    }
-    @media(max-width:768px){
-      .container{flex-direction:column}
-      .image, .info{min-width:100%}
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .info-box {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Inventario de Guardas</h1>
-    <h2 id="codigo">Cargando...</h2>
+    <h2 id="codigo">CÓDIGO</h2>
   </header>
-
   <div class="container">
-    <div class="image" id="imagen">Cargando imagen...</div>
-    <div class="info">
-      <h3>Información</h3>
-      <p><strong>Zona:</strong> <span id="zona">-</span></p>
-      <p><strong>Equipo:</strong> <span id="equipo">-</span></p>
-      <p><strong>Observaciones:</strong> <span id="obs">-</span></p>
-      <p id="msg" class="error" style="display:none"></p>
+    <div class="image-box">
+      <img id="imagen" src="" alt="Imagen del equipo">
+    </div>
+    <div class="info-box">
+      <p><strong>Zona:</strong> <span id="zona"></span></p>
+      <p><strong>Equipo:</strong> <span id="equipo"></span></p>
+      <p><strong>Observaciones:</strong> <span id="observaciones"></span></p>
     </div>
   </div>
 
   <script>
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
-  const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
 
-  function normalize(text){
-    return String(text||"").toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/[^a-z0-9]/g,"");
-  }
-  function cleanNumber(val){
-    if(val==null) return NaN;
-    return Number(String(val).trim().replace(",","."));
-  }
-  function detectDelimiter(text){
-    const firstLine = text.split(/\r\n|\n/)[0]||"";
-    return (firstLine.split(";").length > firstLine.split(",").length) ? ";" : ",";
-  }
-  function parseCSV(text, delimiter=","){
-    text=text.replace(/^\uFEFF/,"");
-    const rows=[], lines=text.split(/\r\n|\n/);
-    for(let line of lines){
-      let row=[], cur="", inQuotes=false;
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];
-        if(ch==='"'){
-          if(inQuotes && line[i+1]==='"'){cur+='"';i++;}
-          else inQuotes=!inQuotes;
-        } else if(ch===delimiter && !inQuotes){
-          row.push(cur); cur="";
-        } else cur+=ch;
-      }
-      row.push(cur);
-      if(!(row.length===1 && row[0].trim()===""))
-        rows.push(row.map(c=>c.trim()));
-    }
-    return rows;
-  }
-  function driveToView(url){
-    if(!url) return "";
-    url=url.trim();
-    const m1=url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if(m1) return "https://drive.google.com/uc?export=view&id="+m1[1];
-    const m2=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if(m2) return "https://drive.google.com/uc?export=view&id="+m2[1];
-    return url;
-  }
+    async function loadCSV() {
+      const response = await fetch(url);
+      const data = await response.text();
 
-  async function loadCSV(){
-    const res=await fetch(csvUrl);
-    const text=await res.text();
-    const rows=parseCSV(text, detectDelimiter(text));
-    const headers=rows[0].map(h=>normalize(h));
-    const headerMap={};
-    headers.forEach((h,i)=>headerMap[h]=i);
+      const rows = data.split("\n").map(r => r.split(","));
 
-    const idxNum = headerMap["n"] ?? headerMap["numero"];
-    const idxCodigo = headerMap["codigo"];
-    const idxZona = headerMap["zona"];
-    const idxEquipo = headerMap["equipo"];
-    const idxObs = headerMap["observaciones"] ?? headerMap["observacion"];
-    const idxImg = headerMap["imagen"] ?? headerMap["foto"] ?? headerMap["link"];
+      // Cabeceras
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const idxNum = headers.indexOf("n°");
+      const idxCodigo = headers.indexOf("código");
+      const idxZona = headers.indexOf("zona");
+      const idxEquipo = headers.indexOf("equipo");
+      const idxObs = headers.indexOf("observaciones");
+      const idxImg = headers.indexOf("imagen");
 
-    const target=cleanNumber(pageNumber);
-    const matchIndex = rows.findIndex((r,i)=>i>0 && cleanNumber(r[idxNum])===target);
+      // Número de página = nombre del archivo (ejemplo: 3.html → "3")
+      const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
 
-    if(matchIndex!==-1){
-      const match=rows[matchIndex];
-      document.getElementById("codigo").textContent="Código: "+(match[idxCodigo]||"-");
-      document.getElementById("zona").textContent=match[idxZona]||"-";
-      document.getElementById("equipo").textContent=match[idxEquipo]||"-";
-      document.getElementById("obs").textContent=match[idxObs]||"-";
+      // Buscar fila que coincida con N°
+      const match = rows.find((r,i) => {
+        if(i === 0) return false;
+        return Number(r[idxNum]?.trim()) === Number(pageNumber);
+      });
 
-      const imgDiv=document.getElementById("imagen");
-      imgDiv.innerHTML="";
-      if(idxImg!==undefined && match[idxImg]){
-        const img=document.createElement("img");
-        img.src=driveToView(match[idxImg]);
-        img.onerror=()=>{imgDiv.textContent="Imagen no disponible";};
-        imgDiv.appendChild(img);
+      if(match){
+        document.getElementById("codigo").textContent = match[idxCodigo] || "Sin código";
+        document.getElementById("zona").textContent = match[idxZona] || "-";
+        document.getElementById("equipo").textContent = match[idxEquipo] || "-";
+        document.getElementById("observaciones").textContent = match[idxObs] || "-";
+        document.getElementById("imagen").src = match[idxImg] || "";
       } else {
-        imgDiv.textContent="Sin imagen disponible";
+        document.getElementById("codigo").textContent = "No encontrado";
       }
-    } else {
-      document.getElementById("codigo").textContent="⚠ No se encontró registro con N° "+pageNumber;
-      document.getElementById("msg").style.display="block";
-      document.getElementById("msg").textContent="Revisa si existe ese número en tu hoja.";
     }
-  }
-  loadCSV();
+
+    loadCSV();
   </script>
 </body>
 </html>
