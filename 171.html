@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventario de Guardas</title>
+  <style>
+    body { 
+      font-family:'Segoe UI', Tahoma, sans-serif; 
+      margin:0; 
+      background:#f5f9ff; 
+      color:#222; 
+    }
+    header { 
+      background:#043366; 
+      color:white; 
+      text-align:center; 
+      padding:1rem; 
+    }
+    .container { 
+      max-width:1000px; 
+      margin:auto; 
+      padding:20px; 
+    }
+    .codigo {
+      text-align:center;
+      font-size:1.2rem;
+      font-weight:bold;
+      margin:20px 0;
+      color:#043366;
+    }
+    .content {
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:20px;
+      align-items:center;
+      background:white;
+      padding:20px;
+      border-radius:12px;
+      box-shadow:0 4px 8px rgba(0,0,0,0.1);
+    }
+    .content img {
+      max-width:100%;
+      border-radius:10px;
+    }
+    .info {
+      font-size:1rem;
+      line-height:1.6;
+    }
+    .info p {
+      margin:10px 0;
+    }
+    .label {
+      font-weight:bold;
+      color:#043366;
+    }
+    a { 
+      display:inline-block; 
+      margin-top:20px; 
+      color:#043366; 
+      font-weight:bold; 
+      text-decoration:none; 
+    }
+    a:hover { text-decoration:underline; }
+    @media(max-width:768px){
+      .content { grid-template-columns:1fr; text-align:center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Inventario de Guardas</h1>
+  </header>
+
+  <div class="container">
+    <div class="codigo" id="codigo"></div>
+
+    <div class="content">
+      <div class="imagen" id="imagen"></div>
+      <div class="info">
+        <p><span class="label">Zona:</span> <span id="zona"></span></p>
+        <p><span class="label">Equipo:</span> <span id="equipo"></span></p>
+        <p><span class="label">Observaciones:</span> <span id="obs"></span></p>
+      </div>
+    </div>
+
+    <a href="index.html">⬅ Volver al listado</a>
+  </div>
+
+  <script>
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
+
+    // Tomar el número de la URL (ej: "3.html" → "3")
+    const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
+
+    async function loadCSV(){
+      const res = await fetch(csvUrl);
+      const data = await res.text();
+      const rows = data.split("\n").map(r=>r.split(","));
+
+      // Índices de las columnas
+      const headers = rows[0];
+      const idxNum = headers.indexOf("N°");
+      const idxZona = headers.indexOf("Zona");
+      const idxEquipo = headers.indexOf("Equipo");
+      const idxObs = headers.indexOf("Observaciones");
+      const idxImg = headers.findIndex(h => h.toLowerCase().includes("imagen"));
+
+      // Buscar fila con N° = pageNumber
+      const match = rows.find(r=>r[idxNum]===pageNumber);
+
+      if(match){
+        document.getElementById("codigo").textContent = "Código: " + match[idxNum];
+        document.getElementById("zona").textContent = match[idxZona] || "-";
+        document.getElementById("equipo").textContent = match[idxEquipo] || "-";
+        document.getElementById("obs").textContent = match[idxObs] || "-";
+
+        if(idxImg !== -1 && match[idxImg].match(/\.(jpg|jpeg|png|gif|webp)$/i)){
+          const img = document.createElement("img");
+          img.src = match[idxImg].trim();
+          document.getElementById("imagen").appendChild(img);
+        } else {
+          document.getElementById("imagen").textContent = "Sin imagen disponible";
+        }
+      }
+    }
+
+    loadCSV();
+  </script>
+</body>
+</html>
