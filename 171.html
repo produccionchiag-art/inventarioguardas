@@ -1,330 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inventario de Guardas</title>
   <style>
-    :root{
-      --principal: #043366;
-      --accent: #ffeb3b;
-      --fondo: #f4f6fa;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 0;
     }
-    *{box-sizing:border-box}
-    body{
-      font-family: Arial, Helvetica, sans-serif;
-      margin:0;
-      padding:20px;
-      background:var(--fondo);
-      color:#222;
+    header {
+      background-color: #043366;
+      color: white;
+      text-align: center;
+      padding: 20px;
     }
-
-    /* Encabezado igual que antes */
-    header{
-      text-align:center;
-      background:var(--principal);
-      color:#fff;
-      padding:25px;
-      border-radius:10px;
+    h1 {
+      margin: 0;
+      font-size: 1.8em;
     }
-    header h1{
-      margin:0;
-      font-size:36px;               /* grande como pediste */
-      font-weight:700;
+    h2 {
+      margin: 10px 0 0;
+      font-size: 1.4em;
+      color: #043366;
+      text-align: center;
     }
-    header h2{
-      margin:14px 0 0 0;
-      font-size:28px;               /* código grande */
-      font-weight:700;
-      color:var(--accent);
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      gap: 20px;
     }
-
-    /* Contenedor principal: imagen izquierda, info derecha */
-    .container{
-      display:flex;
-      flex-wrap:wrap;               /* importante para móviles */
-      gap:24px;
-      align-items:flex-start;
-      justify-content:center;
-      margin-top:32px;
+    .image-box {
+      flex: 1;
+      text-align: center;
     }
-
-    .image{
-      flex:1;
-      min-width:320px;
-      max-width:640px;
-      text-align:center;
+    .image-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
-    .image img{
-      width:100%;
-      height:auto;
-      border-radius:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,0.18);
-      display:block;
-      object-fit:cover;
+    .info-box {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .image .placeholder{
-      padding:40px 20px;
-      background:#fff;
-      border-radius:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,0.08);
-      color:#666;
+    .info-box p {
+      font-size: 1.2em;
+      margin: 10px 0;
     }
-
-    .info{
-      flex:1;
-      min-width:320px;
-      max-width:640px;
-      background:#fff;
-      padding:28px;
-      border-radius:12px;
-      box-shadow:0 6px 16px rgba(0,0,0,0.08);
-      font-size:20px;               /* texto más grande */
-      line-height:1.4;
-    }
-    .info h3{
-      margin:0 0 12px 0;
-      font-size:26px;
-      color:var(--principal);
-    }
-    .info p{ margin:12px 0; font-size:18px; }
-
-    .error{
-      color:#8b0000;
-      font-weight:700;
-      margin-top:12px;
-    }
-
-    /* Responsive: en pantallas pequeñas apilar y mantener tamaños legibles */
-    @media (max-width: 900px){
-      header h1{ font-size:30px; }
-      header h2{ font-size:22px; }
-      .info{ font-size:18px; }
-      .info h3{ font-size:22px; }
-    }
-
-    @media (max-width: 600px){
-      body{ padding:14px; }
-      header{ padding:18px; }
-      header h1{ font-size:24px; }
-      header h2{ font-size:18px; }
-      .container{ flex-direction:column; align-items:center; gap:18px; }
-      .image, .info{ min-width:100%; max-width:100%; }
-      .info{ padding:20px; font-size:17px; }
+    /* Responsivo para móviles */
+    @media (max-width: 600px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .info-box {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Inventario de Guardas</h1>
-    <h2 id="codigo">Cargando...</h2>
+    <h2 id="codigo">CÓDIGO</h2>
   </header>
-
   <div class="container">
-    <div class="image" id="imagen">
-      <div class="placeholder">Cargando imagen...</div>
+    <div class="image-box">
+      <img id="imagen" src="" alt="Imagen del equipo">
     </div>
-
-    <div class="info">
-      <h3>Información</h3>
-      <p><strong>Zona:</strong> <span id="zona">-</span></p>
-      <p><strong>Equipo:</strong> <span id="equipo">-</span></p>
-      <p><strong>Observaciones:</strong> <span id="obs">-</span></p>
-      <p id="msg" class="error" style="display:none"></p>
+    <div class="info-box">
+      <p><strong>Zona:</strong> <span id="zona"></span></p>
+      <p><strong>Equipo:</strong> <span id="equipo"></span></p>
+      <p><strong>Observaciones:</strong> <span id="observaciones"></span></p>
     </div>
   </div>
 
   <script>
-  /* ---------- CONFIG ---------- */
-  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
-  const pageNumber = window.location.pathname.split("/").pop().replace(".html",""); // "3" si el archivo es 3.html
+    const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
 
-  /* ---------- UTIL ---------- */
-  function normalize(text){
-    if(text === undefined || text === null) return "";
-    return String(text)
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-      .replace(/[^a-z0-9]/g,"");
-  }
+    async function loadCSV() {
+      const response = await fetch(url);
+      const data = await response.text();
 
-  function cleanNumber(val){
-    if(val === undefined || val === null) return NaN;
-    const s = String(val).trim();
-    if(s === "") return NaN;
-    // sustituir coma decimal por punto, quitar espacios
-    const only = s.replace(/\s+/g,"").replace(/,/g,".");
-    const n = Number(only);
-    return isNaN(n) ? NaN : n;
-  }
+      const rows = data.split("\n").map(r => r.split(","));
 
-  function detectDelimiter(text){
-    const firstLine = text.split(/\r\n|\n/)[0] || "";
-    const commaCount = (firstLine.match(/,/g)||[]).length;
-    const semiCount = (firstLine.match(/;/g)||[]).length;
-    return semiCount > commaCount ? ";" : ",";
-  }
+      // Cabeceras
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const idxNum = headers.indexOf("n°");
+      const idxCodigo = headers.indexOf("código");
+      const idxZona = headers.indexOf("zona");
+      const idxEquipo = headers.indexOf("equipo");
+      const idxObs = headers.indexOf("observaciones");
+      const idxImg = headers.indexOf("imagen");
 
-  // Parser tolerante para CSV con comillas
-  function parseCSV(text, delimiter=','){
-    text = text.replace(/^\uFEFF/,"");
-    const lines = text.split(/\r\n|\n/);
-    const rows = [];
-    for(const line of lines){
-      let row = [];
-      let cur = "";
-      let inQuotes = false;
-      for(let i=0;i<line.length;i++){
-        const ch = line[i];
-        if(ch === '"'){
-          if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
-          else { inQuotes = !inQuotes; }
-        } else if(ch === delimiter && !inQuotes){
-          row.push(cur);
-          cur = "";
-        } else {
-          cur += ch;
-        }
-      }
-      row.push(cur);
-      // ignorar líneas vacías
-      if(!(row.length === 1 && row[0].trim() === "")){
-        rows.push(row.map(c => (c === undefined ? "" : c.trim())));
-      }
-    }
-    return rows;
-  }
+      // Número de página = nombre del archivo (ejemplo: 3.html → "3")
+      const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
 
-  function driveToView(url){
-    if(!url) return "";
-    const u = url.trim();
-    // ya es url directa a una imagen o data:
-    if(/^data:|https?:\/\//i.test(u) && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(u)) return u;
-    // /file/d/ID/
-    const m1 = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if(m1 && m1[1]) return "https://drive.google.com/uc?export=view&id=" + m1[1];
-    // ?id=ID
-    const m2 = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if(m2 && m2[1]) return "https://drive.google.com/uc?export=view&id=" + m2[1];
-    return u; // fallback
-  }
+      // Buscar fila que coincida con N°
+      const match = rows.find((r,i) => {
+        if(i === 0) return false;
+        return Number(r[idxNum]?.trim()) === Number(pageNumber);
+      });
 
-  /* ---------- Render ---------- */
-  async function loadAndRender(){
-    try{
-      const res = await fetch(csvUrl);
-      if(!res.ok) throw new Error("No se pudo obtener el CSV (chequea que esté publicado).");
-      const text = await res.text();
-      if(!text || text.trim() === "") throw new Error("CSV vacío o inaccesible.");
-      const delim = detectDelimiter(text);
-      const rows = parseCSV(text, delim);
-      if(rows.length < 2) throw new Error("CSV sin datos.");
+      if(match){
+        document.getElementById("codigo").textContent = match[idxCodigo] || "Sin código";
+        document.getElementById("zona").textContent = match[idxZona] || "-";
+        document.getElementById("equipo").textContent = match[idxEquipo] || "-";
+        document.getElementById("observaciones").textContent = match[idxObs] || "-";
 
-      // Headers normalizados
-      const rawHeaders = rows[0].map(h => h || "");
-      const headersNorm = rawHeaders.map(h => normalize(h));
-      const headerMap = {};
-      headersNorm.forEach((h,i) => { if(h) headerMap[h] = i; });
-
-      // Determinar índices para N° y campos requeridos
-      const idxNum = headerMap["n"] ?? headerMap["numero"] ?? headerMap["nro"] ?? headerMap["no"];
-      const idxCodigo = headerMap["codigo"];
-      const idxZona = headerMap["zona"];
-      const idxEquipo = headerMap["equipo"];
-      const idxObs = headerMap["observaciones"] ?? headerMap["observacion"];
-      // detectar columna imagen con varias heurísticas
-      const imgCandidates = ["imagen","foto","foto_url","urlimagen","imagenurl","url_foto","link","img","imagenlink"];
-      let idxImg;
-      for(const k of imgCandidates) if(headerMap[k] !== undefined){ idxImg = headerMap[k]; break; }
-      if(idxImg === undefined){
-        idxImg = headersNorm.findIndex(h => h.includes("imagen") || h.includes("foto") || h.includes("img") || h.includes("link"));
-        if(idxImg === -1) idxImg = undefined;
-      }
-
-      // Si no hay columna N° detectada, mostrar mensaje y salir
-      if(idxNum === undefined){
-        document.getElementById("codigo").textContent = "⚠ Encabezado N° no encontrado";
-        document.getElementById("msg").style.display = "block";
-        document.getElementById("msg").textContent = "No se detectó la columna N° en los encabezados. Revisa el nombre del encabezado en la hoja.";
-        return;
-      }
-
-      // target a buscar (limpio)
-      const targetNum = cleanNumber(pageNumber);
-      const targetStr = String(pageNumber).trim();
-
-      // función para comparar celdas con target (muy tolerante)
-      function matchesCell(cell){
-        if(cell === undefined || cell === null) return false;
-        const raw = String(cell).trim();
-        // 1) comparación numérica si es posible
-        const cellNum = cleanNumber(raw);
-        if(!isNaN(targetNum) && !isNaN(cellNum) && Number(cellNum) === Number(targetNum)) return true;
-        // 2) quitar ceros iniciales y .0 finales
-        const normCell = raw.replace(/^0+/, "").replace(/\.0+$/,"").replace(/[,\.]0+$/,"").trim();
-        const normTarget = targetStr.replace(/^0+/, "").replace(/\.0+$/,"").replace(/[,\.]0+$/,"").trim();
-        if(normCell === normTarget) return true;
-        // 3) contiene (por si es "N° 3" o "No.3")
-        if(raw.replace(/\s+/g,"").includes(targetStr.replace(/\s+/g,""))) return true;
-        // 4) comparar normalizados
-        if(normalize(raw) === normalize(targetStr)) return true;
-        return false;
-      }
-
-      // buscar la fila correspondiente
-      let matchIndex = -1;
-      for(let i=1;i<rows.length;i++){
-        const row = rows[i];
-        const cell = row[idxNum] !== undefined ? row[idxNum] : "";
-        if(matchesCell(cell)){ matchIndex = i; break; }
-      }
-
-      if(matchIndex === -1){
-        document.getElementById("codigo").textContent = "⚠ No encontrado";
-        document.getElementById("msg").style.display = "block";
-        document.getElementById("msg").textContent = "No existe registro con ese N°. Revisa el valor en la hoja o el nombre del archivo.";
-        // limpiar placeholders
-        document.getElementById("zona").textContent = "-";
-        document.getElementById("equipo").textContent = "-";
-        document.getElementById("obs").textContent = "-";
-        const imgDiv = document.getElementById("imagen");
-        imgDiv.innerHTML = '<div class="placeholder">Sin imagen disponible</div>';
-        return;
-      }
-
-      // Si hay match, renderizar.
-      const match = rows[matchIndex];
-      const codigoVal = (idxCodigo !== undefined) ? (match[idxCodigo] || "") : "";
-      document.getElementById("codigo").textContent = "Código: " + (codigoVal || "-");
-      document.getElementById("zona").textContent = (idxZona !== undefined ? (match[idxZona] || "-") : "-");
-      document.getElementById("equipo").textContent = (idxEquipo !== undefined ? (match[idxEquipo] || "-") : "-");
-      document.getElementById("obs").textContent = (idxObs !== undefined ? (match[idxObs] || "-") : "-");
-
-      // Imagen: convertir link de Drive si aplica, mostrar o placeholder
-      const imgDiv = document.getElementById("imagen");
-      imgDiv.innerHTML = "";
-      const rawImg = (idxImg !== undefined) ? (match[idxImg] || "") : "";
-      if(rawImg && rawImg.trim() !== ""){
-        const candidate = driveToView(rawImg.trim());
-        const imgEl = document.createElement("img");
-        imgEl.src = candidate;
-        imgEl.alt = "Imagen del registro";
-        imgEl.onerror = function(){
-          imgDiv.innerHTML = '<div class="placeholder">Imagen no disponible o URL inválida</div>';
-        };
-        imgDiv.appendChild(imgEl);
+        // ✅ limpiar comillas y espacios de la URL
+        let imgUrl = match[idxImg] || "";
+        imgUrl = imgUrl.replace(/^"|"$/g, "").trim();
+        document.getElementById("imagen").src = imgUrl;
       } else {
-        imgDiv.innerHTML = '<div class="placeholder">Sin imagen disponible</div>';
+        document.getElementById("codigo").textContent = "No encontrado";
       }
-
-    }catch(err){
-      document.getElementById("codigo").textContent = "Error al cargar datos";
-      document.getElementById("msg").style.display = "block";
-      document.getElementById("msg").textContent = String(err.message || err);
     }
-  }
 
-  loadAndRender();
+    loadCSV();
   </script>
 </body>
 </html>
