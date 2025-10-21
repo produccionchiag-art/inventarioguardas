@@ -178,16 +178,6 @@
     }
     return rows;
   }
-  function driveToView(url){
-    if(!url) return "";
-    const u = url.trim();
-    if(/^data:|https?:\/\//i.test(u) && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(u)) return u;
-    const m1 = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if(m1 && m1[1]) return "https://drive.google.com/uc?export=view&id=" + m1[1];
-    const m2 = u.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if(m2 && m2[1]) return "https://drive.google.com/uc?export=view&id=" + m2[1];
-    return u;
-  }
 
   async function loadAndRender(){
     try{
@@ -206,9 +196,6 @@
       const idxZona = headerMap["zona"];
       const idxEquipo = headerMap["equipo"];
       const idxObs = headerMap["observaciones"] ?? headerMap["observacion"];
-      const imgCandidates = ["imagen","foto","foto_url","urlimagen","imagenurl","url_foto","link","img","imagenlink"];
-      let idxImg;
-      for(const k of imgCandidates) if(headerMap[k] !== undefined){ idxImg = headerMap[k]; break; }
 
       const targetNum = cleanNumber(pageNumber);
       const targetStr = String(pageNumber).trim();
@@ -241,33 +228,18 @@
       document.getElementById("equipo").textContent = idxEquipo!==undefined?match[idxEquipo]:"-";
       document.getElementById("obs").textContent = idxObs!==undefined?match[idxObs]:"-";
 
-      // -------- BLOQUE NUEVO PARA LA IMAGEN --------
+      // -------- IMAGEN FIJA DESDE GITHUB --------
       (function(){
-        let raw = (idxImg!==undefined)? match[idxImg] : "";
-        console.log("Raw image value from CSV:", JSON.stringify(raw));
-        raw = String(raw||"").replace(/^"|"$/g,"").trim().replace(/&amp;/g,"&").replace(/\r?\n|\r/g,"").replace(/\s+/g,"");
-        console.log("After cleanup:", JSON.stringify(raw));
-        const processed = driveToView(raw);
-        console.log("Processed image URL:", processed);
-
         const container = document.getElementById("imagen");
         container.innerHTML = "";
         const imgEl = document.createElement("img");
-        imgEl.src = processed;
-        imgEl.alt = "Imagen del registro";
-        imgEl.onerror = function(){
-          console.error("Fallo al cargar la imagen. URL:", processed);
-          container.innerHTML = '<div class="placeholder">Imagen no disponible</div>';
-          const a = document.createElement("a");
-          a.href = processed;
-          a.target = "_blank";
-          a.textContent = "Abrir imagen en nueva pestaña";
-          a.style.display="block"; a.style.marginTop="8px";
-          container.appendChild(a);
-        };
+        imgEl.src = "https://raw.githubusercontent.com/produccionchiag-art/inventarioguardas/main/IA-D3-171.jpeg";
+        imgEl.alt = "Imagen del equipo IA-D3-171";
+        imgEl.style.width = "100%";
+        imgEl.style.borderRadius = "12px";
+        imgEl.style.boxShadow = "0 6px 16px rgba(0,0,0,0.18)";
         container.appendChild(imgEl);
       })();
-      // ----------------------------------------------
 
     }catch(err){
       document.getElementById("codigo").textContent = "Error al cargar datos";
