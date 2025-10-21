@@ -126,8 +126,8 @@
       <h3>Información</h3>
       <p><strong>Zona:</strong> <span id="zona">-</span></p>
       <p><strong>Equipo:</strong> <span id="equipo">-</span></p>
-      <p><strong>Serie de Motor:</strong> <span id="serieMotor">-</span></p>
-      <p><strong>Capacidad de Motor:</strong> <span id="capacidadMotor">-</span></p>
+      <p><strong>Serie de motor:</strong> <span id="serieMotor">-</span></p>
+      <p><strong>Capacidad de motor:</strong> <span id="capacidadMotor">-</span></p>
       <p><strong>Observaciones:</strong> <span id="obs">-</span></p>
       <p id="msg" class="error" style="display:none"></p>
     </div>
@@ -144,6 +144,7 @@
       .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
       .replace(/[^a-z0-9]/g,"");
   }
+
   function cleanNumber(val){
     if(val === undefined || val === null) return NaN;
     const s = String(val).trim();
@@ -152,12 +153,14 @@
     const n = Number(only);
     return isNaN(n) ? NaN : n;
   }
+
   function detectDelimiter(text){
     const firstLine = text.split(/\r\n|\n/)[0] || "";
     const commaCount = (firstLine.match(/,/g)||[]).length;
     const semiCount = (firstLine.match(/;/g)||[]).length;
     return semiCount > commaCount ? ";" : ",";
   }
+
   function parseCSV(text, delimiter=','){
     text = text.replace(/^\uFEFF/,"");
     const lines = text.split(/\r\n|\n/);
@@ -221,6 +224,7 @@
       for(let i=1;i<rows.length;i++){
         if(matchesCell(rows[i][idxNum])){ matchIndex = i; break; }
       }
+
       if(matchIndex === -1){
         document.getElementById("codigo").textContent = "⚠ No encontrado";
         return;
@@ -234,24 +238,37 @@
       document.getElementById("capacidadMotor").textContent = idxCapacidadMotor!==undefined?match[idxCapacidadMotor]:"-";
       document.getElementById("obs").textContent = idxObs!==undefined?match[idxObs]:"-";
 
-      // -------- IMAGEN FIJA DESDE GITHUB --------
-      (function(){
-        const container = document.getElementById("imagen");
-        container.innerHTML = "";
-        const imgEl = document.createElement("img");
-        imgEl.src = "https://raw.githubusercontent.com/produccionchiag-art/inventarioguardas/main/IA-D3-171.jpeg";
-        imgEl.alt = "Imagen del equipo IA-D3-171";
-        imgEl.style.width = "100%";
-        imgEl.style.borderRadius = "12px";
-        imgEl.style.boxShadow = "0 6px 16px rgba(0,0,0,0.18)";
-        container.appendChild(imgEl);
-      })();
+      // -------- BLOQUE NUEVO: IMAGEN AUTOMÁTICA EN /imagenes/ --------
+      const container = document.getElementById("imagen");
+      container.innerHTML = "";
+
+      const extensions = [".jpeg", ".jpg", ".png", ".heic", ".heif"];
+      let found = false;
+
+      for (const ext of extensions) {
+        const url = `https://raw.githubusercontent.com/produccionchiag-art/inventarioguardas/main/imagenes/${pageNumber}${ext}`;
+        const resp = await fetch(url);
+        if (resp.ok) {
+          const imgEl = document.createElement("img");
+          imgEl.src = url;
+          imgEl.alt = "Imagen del registro " + pageNumber;
+          container.appendChild(imgEl);
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        container.innerHTML = '<div class="placeholder">Imagen no disponible</div>';
+      }
+      // ----------------------------------------------------------------
 
     }catch(err){
       document.getElementById("codigo").textContent = "Error al cargar datos";
       console.error(err);
     }
   }
+
   loadAndRender();
   </script>
 </body>
