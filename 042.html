@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Inventario de Guardas</title>
+  <style>
+    :root{
+      --principal: #043366;
+      --accent: #ffeb3b;
+      --fondo: #f4f6fa;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family: Arial, Helvetica, sans-serif;
+      margin:0;
+      padding:20px;
+      background:var(--fondo);
+      color:#222;
+    }
+
+    header{
+      text-align:center;
+      background:var(--principal);
+      color:#fff;
+      padding:25px;
+      border-radius:10px;
+    }
+    header h1{
+      margin:0;
+      font-size:36px;
+      font-weight:700;
+    }
+    header h2{
+      margin:14px 0 0 0;
+      font-size:28px;
+      font-weight:700;
+      color:var(--accent);
+    }
+
+    .container{
+      display:flex;
+      flex-wrap:wrap;
+      gap:24px;
+      align-items:flex-start;
+      justify-content:center;
+      margin-top:32px;
+    }
+
+    .image{
+      flex:1;
+      min-width:320px;
+      max-width:640px;
+      text-align:center;
+    }
+    .image img{
+      width:100%;
+      height:auto;
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(0,0,0,0.18);
+      display:block;
+      object-fit:cover;
+    }
+    .image .placeholder{
+      padding:40px 20px;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(0,0,0,0.08);
+      color:#666;
+    }
+
+    .info{
+      flex:1;
+      min-width:320px;
+      max-width:640px;
+      background:#fff;
+      padding:28px;
+      border-radius:12px;
+      box-shadow:0 6px 16px rgba(0,0,0,0.08);
+      font-size:20px;
+      line-height:1.4;
+    }
+    .info h3{
+      margin:0 0 12px 0;
+      font-size:26px;
+      color:var(--principal);
+    }
+    .info p{ margin:12px 0; font-size:18px; }
+
+    .error{
+      color:#8b0000;
+      font-weight:700;
+      margin-top:12px;
+    }
+
+    @media (max-width: 900px){
+      header h1{ font-size:30px; }
+      header h2{ font-size:22px; }
+      .info{ font-size:18px; }
+      .info h3{ font-size:22px; }
+    }
+
+    @media (max-width: 600px){
+      body{ padding:14px; }
+      header{ padding:18px; }
+      header h1{ font-size:24px; }
+      header h2{ font-size:18px; }
+      .container{ flex-direction:column; align-items:center; gap:18px; }
+      .image, .info{ min-width:100%; max-width:100%; }
+      .info{ padding:20px; font-size:17px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Inventario de Guardas</h1>
+    <h2 id="codigo">Cargando...</h2>
+  </header>
+
+  <div class="container">
+    <div class="image" id="imagen">
+      <div class="placeholder">Cargando imagen...</div>
+    </div>
+
+    <div class="info">
+      <h3>Información</h3>
+      <p><strong>Zona:</strong> <span id="zona">-</span></p>
+      <p><strong>Equipo:</strong> <span id="equipo">-</span></p>
+      <p><strong>Serie de motor:</strong> <span id="serieMotor">-</span></p>
+      <p><strong>Capacidad de motor:</strong> <span id="capacidadMotor">-</span></p>
+      <p><strong>Observaciones:</strong> <span id="obs">-</span></p>
+      <p id="msg" class="error" style="display:none"></p>
+    </div>
+  </div>
+
+  <script>
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTDZrm8l5Hrina8ZCuxg6fJ2ZJvpE_JsGpLjnf0cs8fYiPqRDa1_dGHD9unq4g1g/pub?gid=1460194781&single=true&output=csv";
+  const pageNumber = window.location.pathname.split("/").pop().replace(".html","");
+
+  function normalize(text){
+    if(text === undefined || text === null) return "";
+    return String(text)
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-z0-9]/g,"");
+  }
+
+  function cleanNumber(val){
+    if(val === undefined || val === null) return NaN;
+    const s = String(val).trim();
+    if(s === "") return NaN;
+    const only = s.replace(/\s+/g,"").replace(/,/g,".");
+    const n = Number(only);
+    return isNaN(n) ? NaN : n;
+  }
+
+  function detectDelimiter(text){
+    const firstLine = text.split(/\r\n|\n/)[0] || "";
+    const commaCount = (firstLine.match(/,/g)||[]).length;
+    const semiCount = (firstLine.match(/;/g)||[]).length;
+    return semiCount > commaCount ? ";" : ",";
+  }
+
+  function parseCSV(text, delimiter=','){
+    text = text.replace(/^\uFEFF/,"");
+    const lines = text.split(/\r\n|\n/);
+    const rows = [];
+    for(const line of lines){
+      let row = [], cur = "", inQuotes = false;
+      for(let i=0;i<line.length;i++){
+        const ch = line[i];
+        if(ch === '"'){
+          if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
+          else { inQuotes = !inQuotes; }
+        } else if(ch === delimiter && !inQuotes){
+          row.push(cur); cur = "";
+        } else { cur += ch; }
+      }
+      row.push(cur);
+      if(!(row.length === 1 && row[0].trim() === "")){
+        rows.push(row.map(c => (c === undefined ? "" : c.trim())));
+      }
+    }
+    return rows;
+  }
+
+  async function loadAndRender(){
+    try{
+      const res = await fetch(csvUrl);
+      if(!res.ok) throw new Error("No se pudo obtener el CSV.");
+      const text = await res.text();
+      const delim = detectDelimiter(text);
+      const rows = parseCSV(text, delim);
+
+      const headersNorm = rows[0].map(h => normalize(h||""));
+      const headerMap = {};
+      headersNorm.forEach((h,i) => { if(h) headerMap[h] = i; });
+
+      const idxNum = headerMap["n"] ?? headerMap["numero"] ?? headerMap["nro"] ?? headerMap["no"];
+      const idxCodigo = headerMap["codigo"];
+      const idxZona = headerMap["zona"];
+      const idxEquipo = headerMap["equipo"];
+      const idxSerieMotor = headerMap["seriedemotor"];
+      const idxCapacidadMotor = headerMap["capacidaddemotor"];
+      const idxObs = headerMap["observaciones"] ?? headerMap["observacion"];
+
+      const targetNum = cleanNumber(pageNumber);
+      const targetStr = String(pageNumber).trim();
+
+      function matchesCell(cell){
+        if(cell === undefined || cell === null) return false;
+        const raw = String(cell).trim();
+        const cellNum = cleanNumber(raw);
+        if(!isNaN(targetNum) && !isNaN(cellNum) && Number(cellNum) === Number(targetNum)) return true;
+        const normCell = raw.replace(/^0+/, "").replace(/\.0+$/,"").replace(/[,\.]0+$/,"").trim();
+        const normTarget = targetStr.replace(/^0+/, "").replace(/\.0+$/,"").replace(/[,\.]0+$/,"").trim();
+        if(normCell === normTarget) return true;
+        if(raw.replace(/\s+/g,"").includes(targetStr.replace(/\s+/g,""))) return true;
+        if(normalize(raw) === normalize(targetStr)) return true;
+        return false;
+      }
+
+      let matchIndex = -1;
+      for(let i=1;i<rows.length;i++){
+        if(matchesCell(rows[i][idxNum])){ matchIndex = i; break; }
+      }
+
+      if(matchIndex === -1){
+        document.getElementById("codigo").textContent = "⚠ No encontrado";
+        return;
+      }
+
+      const match = rows[matchIndex];
+      document.getElementById("codigo").textContent = "Código: " + (idxCodigo!==undefined?match[idxCodigo]:"-");
+      document.getElementById("zona").textContent = idxZona!==undefined?match[idxZona]:"-";
+      document.getElementById("equipo").textContent = idxEquipo!==undefined?match[idxEquipo]:"-";
+      document.getElementById("serieMotor").textContent = idxSerieMotor!==undefined?match[idxSerieMotor]:"-";
+      document.getElementById("capacidadMotor").textContent = idxCapacidadMotor!==undefined?match[idxCapacidadMotor]:"-";
+      document.getElementById("obs").textContent = idxObs!==undefined?match[idxObs]:"-";
+
+      // -------- BLOQUE NUEVO: IMAGEN AUTOMÁTICA EN /imagenes/ --------
+      const container = document.getElementById("imagen");
+      container.innerHTML = "";
+
+      const extensions = [".jpeg", ".jpg", ".png", ".heic", ".heif"];
+      let found = false;
+
+      for (const ext of extensions) {
+        const url = `https://raw.githubusercontent.com/produccionchiag-art/inventarioguardas/main/imagenes/${pageNumber}${ext}`;
+        const resp = await fetch(url);
+        if (resp.ok) {
+          const imgEl = document.createElement("img");
+          imgEl.src = url;
+          imgEl.alt = "Imagen del registro " + pageNumber;
+          container.appendChild(imgEl);
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        container.innerHTML = '<div class="placeholder">Imagen no disponible</div>';
+      }
+      // ----------------------------------------------------------------
+
+    }catch(err){
+      document.getElementById("codigo").textContent = "Error al cargar datos";
+      console.error(err);
+    }
+  }
+
+  loadAndRender();
+  </script>
+</body>
+</html>
